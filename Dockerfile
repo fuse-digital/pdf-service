@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
-EXPOSE 80
+EXPOSE 8080
 
 RUN apt-get update && \
     apt-get install -y wget libxss1 libgconf-2-4 gnupg2 && \
