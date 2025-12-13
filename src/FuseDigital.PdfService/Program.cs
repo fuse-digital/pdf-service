@@ -27,6 +27,8 @@ if (enableAuth)
                 ValidateIssuerSigningKey = true,
             };
         });
+    
+    builder.Services.AddAuthorization();
 }
 
 var app = builder.Build();
