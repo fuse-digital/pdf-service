@@ -1,31 +1,19 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using PuppeteerSharp;
 using PuppeteerSharp.Media;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var authority = builder.Configuration["AUTHORITY"];
-var audience = builder.Configuration["AUDIENCE"];
-var enableAuth = !string.IsNullOrEmpty(authority) && !string.IsNullOrEmpty(audience);
+var enableAuth = !string.IsNullOrEmpty(authority);
 
 if (enableAuth)
 {
-    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    builder.Services.AddAuthentication()
         .AddJwtBearer(options =>
         {
             options.Authority = authority;
-            options.Audience = audience;
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidIssuer = authority,
-                ValidateAudience = true,
-                ValidAudience = audience,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-            };
+            options.TokenValidationParameters.ValidateAudience = false;
         });
     
     builder.Services.AddAuthorization();
