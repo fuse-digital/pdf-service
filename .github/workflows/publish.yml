@@ -2,7 +2,8 @@ name: Build and Publish to GHCR
 
 on:
   push:
-    branches: [ master ]
+    tags:
+      - '*.*.*'
   workflow_dispatch:
 
 jobs:
@@ -15,11 +16,22 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v1.1.1
+        with:
+          versionSpec: '5.x'
+
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v1.1.1
 
       - name: Set up .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Publish .NET project
         run: dotnet publish ./src/FuseDigital.PdfService/FuseDigital.PdfService.csproj --output dist --configuration Release
@@ -36,4 +48,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ steps.gitversion.outputs.majorMinorPatch }}
