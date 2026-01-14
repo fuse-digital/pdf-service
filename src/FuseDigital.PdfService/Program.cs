@@ -1,12 +1,18 @@
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using PuppeteerSharp;
-using PuppeteerSharp.Media;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var authority = builder.Configuration["AUTHORITY"];
 var enableAuth = !string.IsNullOrEmpty(authority);
 
+builder.Services.AddControllers(options =>
+{
+    if (enableAuth)
+    {
+        options.Filters.Add(new AuthorizeFilter());
+    }
+});
 if (enableAuth)
 {
     builder.Services.AddAuthentication()
@@ -15,7 +21,7 @@ if (enableAuth)
             options.Authority = authority;
             options.TokenValidationParameters.ValidateAudience = false;
         });
-    
+
     builder.Services.AddAuthorization();
 }
 
@@ -26,30 +32,12 @@ if (enableAuth)
     app.UseAuthentication();
     app.UseAuthorization();
 }
+app.MapControllers();
 
-var endpoint = app.MapPost("/api/generate-pdf", async ([FromBody] GeneratePdfDto input) =>
-{
-    var launchOptions = new LaunchOptions { Headless = true, Args = ["--no-sandbox", "--disable-setuid-sandbox"] };
-
-    await using var browser = await Puppeteer.LaunchAsync(launchOptions);
-    await using var page = await browser.NewPageAsync();
-
-    await page.SetContentAsync(input.ContentHtml);
-
-    var pdf = await page.PdfStreamAsync(new PdfOptions
-    {
-        Format = PaperFormat.A4,
-        PrintBackground = true
-    });
-
-    return pdf == null
-        ? Results.NotFound()
-        : Results.File(pdf, "application/pdf", $"{input.FileName}.pdf");
-});
-
-if (enableAuth)
-{
-    endpoint.RequireAuthorization();
-}
+#if DEBUG
+// Ensure Chromium exists for local dev BEFORE handling requests
+var browserFetcher = new BrowserFetcher();
+await browserFetcher.DownloadAsync();
+#endif
 
 await app.RunAsync();
